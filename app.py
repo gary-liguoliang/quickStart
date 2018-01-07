@@ -1,15 +1,31 @@
 import os
-import subprocess
 from Tkinter import *
+
+from targets_repo import TargetsRepo
+
+
+def get_handler():
+    if os.name == 'nt':
+        from windows_handler import WindowsHandler
+        return WindowsHandler
+    elif os.name == 'posix':
+        from mac_handler import MacHandler
+        return MacHandler
+    else:
+        print "OS not supported yet: " + os.name
+        exit(-1)
+
 
 root = Tk()
 root.resizable(0, 0)
 root.title("Start...")
 root.geometry("500x200")
 
+target_repo = TargetsRepo()
 
 def get_select_options(input):
-    return [input + "-A", input + "-B", input + "-C"]
+    return target_repo.get_targets(input)
+    # return [input + "-A", input + "-B", input + "-C"]
 
 
 def update_select_options(input):
@@ -28,8 +44,10 @@ def on_type_in_entry(event):
     if event.keysym in {'Up', 'Down'}:
         print "ignoring", event.keycode, event.keysym
         listbox.focus_set()
-        listbox.select_set(0)
+        # listbox.select_set(0)
         return "break"
+    elif event.keysym == 'Return':
+        go_to_selected_target()
 
 
 def on_type_on_list_box(event):
@@ -43,22 +61,24 @@ def on_type_on_list_box(event):
         entry.focus_set()
         sv.set(sv.get()[:-1])
     elif (event.keysym == "Return"):
-        if listbox.get(ACTIVE):
-            go_to(listbox.get(ACTIVE))
+        go_to_selected_target()
 
 
-def go_to(item):
-    print "go to: ", item
-    subprocess.call(['start',  'http://google.com/search?q=' + item], shell=True)
+def clean_input():
+    sv.set('')
+    on_text_change(sv)
 
 
-def register_key():
-    if os.name == 'nt':
-        import windows_ops
-        windows_ops.register_hot_key()
-        root.after(1, windows_ops.hotkey_handler, root)
-    else:
-        print "not supported yet"
+def on_type_anywhere(event):
+    print event.keysym
+    if event.keysym == 'Escape':
+        clean_input()
+
+
+def go_to_selected_target():
+    item = listbox.get(ACTIVE)
+    if item:
+        get_handler().go_to('http://google.com/search?q=' + item)
 
 
 sv = StringVar()
@@ -72,6 +92,10 @@ listbox.pack(fill=X)
 listbox.insert(END, "type a keyword")
 listbox.bind('<Key>', on_type_on_list_box)
 
+root.bind('<Key>', on_type_anywhere)
+
 entry.focus_set()
-register_key()
+
+get_handler().register_hot_key()
+
 root.mainloop()
