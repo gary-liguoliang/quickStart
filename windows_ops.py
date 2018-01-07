@@ -7,8 +7,10 @@ user32 = WinDLL('user32', use_last_error=True)
 
 
 def register_hot_key():
-    if not user32.RegisterHotKey(None, 1, win32con.MOD_CONTROL, ord("G")):
+    if not user32.RegisterHotKey(None, 1, win32con.MOD_ALT, win32con.VK_SPACE):
         print "failed to register hot key"
+    else:
+        print 'key registered'
 
 
 def raise_above_all(window):
